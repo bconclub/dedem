@@ -116,6 +116,15 @@ function load(url) {
   els.input.value = url;
   panelMsg(els.deviceDesktop, "");
   panelMsg(els.devicePhone, "");
+  // Pin the target origin in the cookie BEFORE any frame request fires, so every
+  // proxied asset/chunk (root-relative, resolved by the server via this cookie)
+  // is correct from the very first request — no race, no dependence on the main
+  // HTML response's Set-Cookie, and no window where a stale origin breaks images.
+  try {
+    document.cookie =
+      "dedem_o=" + encodeURIComponent(new URL(url).origin) +
+      "; Path=/; SameSite=Lax; Max-Age=86400";
+  } catch {}
   const src = proxied(url);
   els.frameDesktop.src = src;
   els.frameMobile.src = src;

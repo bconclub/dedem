@@ -418,8 +418,12 @@ function resolveOrigin(req) {
 // so intercepted API calls (GET/POST/PUT/...) go through too.
 app.all("/proxy", (req, res) => proxyTo(req.query.url, req, res));
 
-// Static app files.
-app.use(express.static(path.join(__dirname, "public")));
+// Static app files — no-store so clients always run the latest shell/JS.
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    setHeaders: (res) => res.setHeader("Cache-Control", "no-store, must-revalidate"),
+  })
+);
 
 // Catch-all: runtime-constructed requests (Next.js chunks, fetch/XHR, hard
 // sub-navigations) arrive as bare same-origin paths — proxy them to the site.
