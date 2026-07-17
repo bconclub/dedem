@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 5173;
 // addresses. Without this, an open proxy can be pointed at the host's own
 // internal services and cloud metadata (169.254.169.254) to steal credentials.
 // Left off locally so localhost dev-server previews keep working.
-const PUBLIC_MODE = process.env.DEDEM_PUBLIC === "1";
+const PUBLIC_MODE = process.env.DEDEM_PUBLIC === "1" || !!process.env.VERCEL;
 
 function isPrivateIp(ip) {
   if (net.isIPv4(ip)) {
@@ -205,7 +205,7 @@ function rewriteHtml(html, base) {
       /\b(src)\s*=\s*("|')(.*?)\2/gi,
       (mm, a, q, val) => `${a}=${q}${rewriteRef(val, base)}${q}`
     ) + ">";
-    const token = ` S${scripts.length} `;
+    const token = `DDSCRIPT${scripts.length}DDEND`;
     scripts.push(openTag + body + "</script>");
     return token;
   });
@@ -244,7 +244,7 @@ function rewriteHtml(html, base) {
   );
 
   // Restore masked scripts.
-  html = html.replace(/ S(\d+) /g, (m, i) => scripts[+i]);
+  html = html.replace(/DDSCRIPT(\d+)DDEND/g, (m, i) => scripts[+i]);
 
   // Inject agent into <head> (must be first so the location fix runs before
   // the site's own scripts read location.pathname).
@@ -407,6 +407,12 @@ app.use((req, res) => {
   proxyTo(origin + req.originalUrl, req, res);
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  DEDEM running →  http://localhost:${PORT}\n`);
-});
+// On Vercel the platform invokes the exported app as a serverless handler;
+// locally (and on the VPS/Docker) we start a normal listening server.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n  DEDEM running →  http://localhost:${PORT}\n`);
+  });
+}
+
+export default app;
