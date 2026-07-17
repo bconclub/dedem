@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DEDEM</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E🖥️%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand">
+        <span class="dot"></span> <span class="brand-word">DEDEM</span>
+      </div>
+
+      <form id="urlForm" class="url-bar">
+        <input
+          id="urlInput"
+          type="text"
+          placeholder="Paste a site URL — yoursite.vercel.app  or  localhost:3000"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="submit" class="btn primary">Load</button>
+      </form>
+
+      <div class="controls">
+        <button id="refreshBtn" class="btn ghost" title="Reload both panels">↻</button>
+        <button id="themeBtn" class="btn ghost" title="Toggle dark studio background">🌙</button>
+        <label class="switch" title="Scroll both panels together">
+          <input id="syncToggle" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+          <span class="switch-label">Sync</span>
+        </label>
+        <div class="seg" id="widthSeg" title="Desktop viewport width">
+          <button data-w="1280" class="active">1280</button>
+          <button data-w="1440">1440</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="stage" class="stage">
+      <section class="panel desktop">
+        <div class="panel-label">Desktop <span id="wLabel">1280</span>×</div>
+        <div class="device browser">
+          <div class="chrome">
+            <span class="tl"></span><span class="tl"></span><span class="tl"></span>
+            <div class="addr" id="addrDesktop">about:blank</div>
+          </div>
+          <div class="viewport" id="vpDesktop">
+            <iframe id="frameDesktop" title="Desktop preview"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel mobile">
+        <div class="panel-label">iPhone 390×</div>
+        <div class="device phone">
+          <div class="island"></div>
+          <div class="viewport" id="vpMobile">
+            <iframe id="frameMobile" title="Mobile preview"></iframe>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="empty" class="empty">
+      <div class="empty-card">
+        <div class="empty-emoji">🖥️  📱</div>
+        <h1>Paste a URL to preview</h1>
+        <p>See any site on desktop and mobile at once — scroll one, both follow.</p>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

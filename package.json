@@ -1,0 +1,13 @@
+{
+  "name": "dedem",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEDEM — side-by-side desktop + mobile website preview with synced scrolling, for demos.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

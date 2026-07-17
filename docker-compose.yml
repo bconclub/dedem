@@ -1,0 +1,8 @@
+services:
+  dedem:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:5173"
+    environment:
+      DEDEM_PUBLIC: "1"   # enforce SSRF guard (block private/internal targets)
