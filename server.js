@@ -103,6 +103,12 @@ const HIDE_SCROLLBAR = `<style>html{scrollbar-width:none!important;-ms-overflow-
 // fired straight from localhost they'd be CORS-blocked and the page stays empty.
 // Must run before the site's bundle, so it goes first in <head>.
 const NET_AGENT = `<script>(function(){
+  // Capture errors so DEDEM can explain why a site failed to render.
+  window.__DD_ERR = [];
+  window.addEventListener("error", function(e){ try{ window.__DD_ERR.push(String(e.message)+" @ "+String(e.filename||"").slice(-70)+":"+e.lineno); }catch(_){} });
+  window.addEventListener("unhandledrejection", function(e){ try{ window.__DD_ERR.push("promise: "+String((e.reason&&e.reason.message)||e.reason)); }catch(_){} });
+  var _ce = console.error;
+  console.error = function(){ try{ window.__DD_ERR.push("console.error: "+Array.prototype.slice.call(arguments).map(function(a){return (a&&a.stack)||(a&&a.message)||String(a);}).join(" ").slice(0,400)); }catch(_){} return _ce.apply(console, arguments); };
   // Best-effort anti-frame-detection: some sites hide content when framed.
   try{ Object.defineProperty(window, "frameElement", { get:function(){ return null; }, configurable:true }); }catch(e){}
   var origin = location.origin;
@@ -353,7 +359,20 @@ async function proxyTo(targetUrl, req, res) {
   res.status(upstream.status);
 
   if (contentType.includes("text/html")) {
-    lastOrigin = new URL(finalUrl).origin;
+    const org = new URL(finalUrl).origin;
+    // Persist the origin in a cookie so runtime-constructed requests (webpack
+    // dynamic chunks, fetch/XHR) can resolve it even when their Referer no
+    // longer carries ?url= (history.replaceState changed the iframe path) and
+    // even on stateless serverless where the lastOrigin global doesn't persist.
+    // ONLY for the main preview-frame navigation — otherwise a proxied analytics
+    // page or embed (e.g. googletagmanager) would clobber the cookie and every
+    // bare chunk request would resolve to the wrong origin.
+    const dest = req.headers["sec-fetch-dest"];
+    const isFrameNav = !dest || dest === "iframe" || dest === "document";
+    if (isFrameNav) {
+      lastOrigin = org;
+      res.setHeader("Set-Cookie", `dedem_o=${encodeURIComponent(org)}; Path=/; SameSite=Lax; Max-Age=86400`);
+    }
     let html = await upstream.text();
     html = rewriteHtml(html, finalUrl);
     res.setHeader("content-type", "text/html; charset=utf-8");
@@ -375,15 +394,22 @@ async function proxyTo(targetUrl, req, res) {
   res.send(buf);
 }
 
-// Resolve the intended target origin for a bare same-origin request using the
-// Referer's ?url= param, falling back to the last loaded site.
-function originFromReferer(req) {
+// Resolve the intended target origin for a bare same-origin request:
+// (1) the Referer's ?url= param, (2) the dedem_o cookie (survives replaceState
+// and serverless statelessness), (3) the last-loaded-site global fallback.
+function resolveOrigin(req) {
   const ref = req.headers["referer"] || req.headers["referrer"];
   if (ref) {
     try {
-      const u = new URL(ref);
-      const inner = u.searchParams.get("url");
+      const inner = new URL(ref).searchParams.get("url");
       if (inner) return new URL(inner).origin;
+    } catch {}
+  }
+  const cookie = req.headers["cookie"] || "";
+  const m = cookie.match(/(?:^|;\s*)dedem_o=([^;]+)/);
+  if (m) {
+    try {
+      return new URL(decodeURIComponent(m[1])).origin;
     } catch {}
   }
   return lastOrigin;
@@ -399,7 +425,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Catch-all: runtime-constructed requests (Next.js chunks, fetch/XHR, hard
 // sub-navigations) arrive as bare same-origin paths — proxy them to the site.
 app.use((req, res) => {
-  const origin = originFromReferer(req);
+  const origin = resolveOrigin(req);
   if (!origin) {
     res.status(404).send("Not found");
     return;
