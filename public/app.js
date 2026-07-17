@@ -94,9 +94,9 @@ function watchRender(url) {
     if (Date.now() >= deadline) {
       const host = (() => { try { return new URL(url).host; } catch { return url; } })();
       const msg =
-        `<div class="pm-emoji">🚫</div>` +
+        `<svg class="pm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/></svg>` +
         `<div class="pm-title">Can’t preview this site</div>` +
-        `<div class="pm-sub">${host} blocks embedding or renders only in a real browser tab (e.g. strict framing rules or realtime sockets).</div>`;
+        `<div class="pm-sub">${host} blocks embedding or renders only in a real browser tab.</div>`;
       panelMsg(els.deviceDesktop, msg);
       panelMsg(els.devicePhone, msg);
       return;
