@@ -364,12 +364,11 @@ async function proxyTo(targetUrl, req, res) {
     // dynamic chunks, fetch/XHR) can resolve it even when their Referer no
     // longer carries ?url= (history.replaceState changed the iframe path) and
     // even on stateless serverless where the lastOrigin global doesn't persist.
-    // ONLY for the main preview-frame navigation — otherwise a proxied analytics
-    // page or embed (e.g. googletagmanager) would clobber the cookie and every
-    // bare chunk request would resolve to the wrong origin.
-    const dest = req.headers["sec-fetch-dest"];
-    const isFrameNav = !dest || dest === "iframe" || dest === "document";
-    if (isFrameNav) {
+    // ONLY for the two main preview frames (app.js marks them with main=1).
+    // Nested embeds a site loads — Vimeo/YouTube players, maps, analytics, ads —
+    // are also HTML frame navigations; without this gate they'd clobber the
+    // cookie and every bare chunk request would resolve to the wrong origin.
+    if (req.query.main === "1") {
       lastOrigin = org;
       res.setHeader("Set-Cookie", `dedem_o=${encodeURIComponent(org)}; Path=/; SameSite=Lax; Max-Age=86400`);
     }

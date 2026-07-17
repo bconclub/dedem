@@ -31,7 +31,9 @@ function normalize(raw) {
 }
 
 function proxied(url) {
-  return "/proxy?url=" + encodeURIComponent(url);
+  // main=1 marks the top preview frame so the server only pins the origin cookie
+  // for these two frames — never for nested embeds (video players, maps, ads).
+  return "/proxy?url=" + encodeURIComponent(url) + "&main=1";
 }
 
 // Render an iframe at a true device width, then scale it to fill its viewport box.
